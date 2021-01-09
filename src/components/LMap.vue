@@ -12,7 +12,6 @@ import {
   remapEvents,
   propsBinder,
   debounce,
-  resetWebpackIcon,
   provideLeafletWrapper,
   updateLeafletWrapper,
 } from "../utils.js";
@@ -216,17 +215,9 @@ export default {
 
     onMounted(async () => {
       WINDOW_OR_GLOBAL.L = WINDOW_OR_GLOBAL.L || (await import("leaflet"));
-      const {
-        map,
-        CRS,
-        Icon,
-        latLngBounds,
-        latLng,
-        DomEvent,
-      } = WINDOW_OR_GLOBAL.L;
+      const { map, CRS, latLngBounds, latLng, DomEvent } = WINDOW_OR_GLOBAL.L;
       options.beforeMapMount && (await options.beforeMapMount());
 
-      await resetWebpackIcon(Icon);
       options.crs = options.crs || CRS.EPSG3857;
 
       const methods = {
