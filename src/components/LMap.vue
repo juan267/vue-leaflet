@@ -216,6 +216,7 @@ export default {
     onMounted(async () => {
       WINDOW_OR_GLOBAL.L = WINDOW_OR_GLOBAL.L || (await import("leaflet"));
       const { map, CRS, latLngBounds, latLng, DomEvent } = WINDOW_OR_GLOBAL.L;
+      options.beforeMapMount && (await options.beforeMapMount());
 
       options.crs = options.crs || CRS.EPSG3857;
 
