@@ -23,14 +23,6 @@ import {
   setup as componentSetup,
 } from "../functions/component";
 
-<<<<<<< HEAD
-const WINDOW_OR_GLOBAL =
-  (typeof self === "object" && self.self === self && self) ||
-  (typeof global === "object" && global.global === global && global) ||
-  undefined;
-
-=======
->>>>>>> fix/118
 export default {
   emits: ["ready", "update:zoom", "update:center", "update:bounds"],
   props: {
