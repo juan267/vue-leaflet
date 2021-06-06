@@ -1,12 +1,13 @@
 <script>
 import {
-  onMounted,
-  onBeforeUnmount,
   computed,
+  h,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  provide,
   reactive,
   ref,
-  nextTick,
-  h,
 } from "vue";
 import {
   remapEvents,
@@ -14,18 +15,24 @@ import {
   debounce,
   provideLeafletWrapper,
   updateLeafletWrapper,
+  WINDOW_OR_GLOBAL,
+  GLOBAL_LEAFLET_OPT,
 } from "../utils.js";
 import {
   props as componentProps,
   setup as componentSetup,
 } from "../functions/component";
 
+<<<<<<< HEAD
 const WINDOW_OR_GLOBAL =
   (typeof self === "object" && self.self === self && self) ||
   (typeof global === "object" && global.global === global && global) ||
   undefined;
 
+=======
+>>>>>>> fix/118
 export default {
+  emits: ["ready", "update:zoom", "update:center", "update:bounds"],
   props: {
     ...componentProps,
     /**
@@ -99,11 +106,14 @@ export default {
       default: false,
     },
     /**
-     * The crs option for the map
-     * @values CRS.EPSG3857
+     * The CRS to use for the map. Can be an object that defines a coordinate reference
+     * system for projecting geographical points into screen coordinates and back
+     * (see https://leafletjs.com/reference-1.7.1.html#crs-l-crs-base), or a string
+     * name identifying one of Leaflet's defined CRSs, such as "EPSG4326".
      */
     crs: {
-      type: Object,
+      type: [String, Object],
+      default: "EPSG3857",
     },
     maxBoundsViscosity: {
       type: Number,
@@ -145,6 +155,10 @@ export default {
       type: Boolean,
       default: false,
     },
+    useGlobalLeaflet: {
+      type: Boolean,
+      default: false,
+    },
   },
   setup(props, context) {
     const root = ref(null);
@@ -179,6 +193,7 @@ export default {
     const removeLayer = provideLeafletWrapper("removeLayer");
     const registerControl = provideLeafletWrapper("registerControl");
     const registerLayerControl = provideLeafletWrapper("registerLayerControl");
+    provide(GLOBAL_LEAFLET_OPT, props.useGlobalLeaflet);
 
     const eventHandlers = {
       moveEndHandler() {
@@ -214,11 +229,33 @@ export default {
     };
 
     onMounted(async () => {
-      WINDOW_OR_GLOBAL.L = WINDOW_OR_GLOBAL.L || (await import("leaflet"));
-      const { map, CRS, latLngBounds, latLng, DomEvent } = WINDOW_OR_GLOBAL.L;
-      options.beforeMapMount && (await options.beforeMapMount());
+      if (props.useGlobalLeaflet) {
+        WINDOW_OR_GLOBAL.L = WINDOW_OR_GLOBAL.L || (await import("leaflet"));
+      }
+      const {
+        map,
+        CRS,
+        Icon,
+        latLngBounds,
+        latLng,
+        DomEvent,
+      } = props.useGlobalLeaflet
+        ? WINDOW_OR_GLOBAL.L
+        : await import("leaflet/dist/leaflet-src.esm");
 
-      options.crs = options.crs || CRS.EPSG3857;
+      try {
+        options.beforeMapMount && (await options.beforeMapMount());
+      } catch (error) {
+        console.error(
+          `The following error occurred running the provided beforeMapMount hook ${error.message}`
+        );
+      }
+
+      await resetWebpackIcon(Icon);
+
+      const optionsCrs =
+        typeof options.crs == "string" ? CRS[options.crs] : options.crs;
+      options.crs = optionsCrs || CRS.EPSG3857;
 
       const methods = {
         addLayer(layer) {
